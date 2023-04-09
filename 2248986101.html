@@ -1,0 +1,380 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>多线程WEB服务器设计 | 竹杖芒鞋轻胜马</title><meta name="author" content="戈壁残阳"><meta name="copyright" content="戈壁残阳"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="要求基于运输层或其下层协议进行开发，而不能直接调用高级语言封装好的协议库或插件等。 设计目的： 设计并实现一个 WEB 服务器，可并行服务处理多个请求。 设计要求：  在后台运行服务器程序。  使用 Socket API 或 WinPcap 技术。  主线程监听客户机的连接建立请求，为每次请求&#x2F;响应创建一个单独的TCP 连接，一个单独的线程	将处理这些连接。  用浏览器打开，显示请求页面内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多线程WEB服务器设计">
+<meta property="og:url" content="http://lzj3214677.github.io/2248986101.html">
+<meta property="og:site_name" content="竹杖芒鞋轻胜马">
+<meta property="og:description" content="要求基于运输层或其下层协议进行开发，而不能直接调用高级语言封装好的协议库或插件等。 设计目的： 设计并实现一个 WEB 服务器，可并行服务处理多个请求。 设计要求：  在后台运行服务器程序。  使用 Socket API 或 WinPcap 技术。  主线程监听客户机的连接建立请求，为每次请求&#x2F;响应创建一个单独的TCP 连接，一个单独的线程	将处理这些连接。  用浏览器打开，显示请求页面内">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://lzj3214677.github.io/local_file/shanguiyao.png">
+<meta property="article:published_time" content="2023-04-07T14:22:00.000Z">
+<meta property="article:modified_time" content="2023-04-09T15:24:06.554Z">
+<meta property="article:author" content="戈壁残阳">
+<meta property="article:tag" content="计算机网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://lzj3214677.github.io/local_file/shanguiyao.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://lzj3214677.github.io/2248986101.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":true,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '多线程WEB服务器设计',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-04-09 23:24:06'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.loli.net/css2?family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.loli.net/css2?family=Ma+Shan+Zheng:wght@400;500;700&display=swap" rel="stylesheet"><!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<link rel="stylesheet" href="https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.css" /><!-- hexo injector head_end end --><meta name="generator" content="Hexo 5.4.2"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+
+if (false) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="../local_file/shanguiyao.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="../archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/"><div class="headline">标签</div><div class="length-num">2</div></a><a href="../categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="../index.html"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="../about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 结构</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="../categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></li><li><a class="site-page child" href="../tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="../archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li></ul></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/local_file/%E8%AE%A1%E7%AE%97%E6%9C%BA.jpg')"><nav id="nav"><span id="blog-info"><a href="../index.html" title="竹杖芒鞋轻胜马"><span class="site-name">竹杖芒鞋轻胜马</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="../index.html"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="../about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa fa-heartbeat"></i><span> 结构</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="../categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></li><li><a class="site-page child" href="../tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="../archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li></ul></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">多线程WEB服务器设计</h1><div id="post-meta"><div class="meta-firstline"><i class="fa-solid fa-user"></i><span class="post-meta-author">戈壁残阳</span><span class="post-meta-date"><span class="post-meta-separator">|</span><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-04-07T14:22:00.000Z" title="发表于 2023-04-07 22:22:00">2023-04-07</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-04-09T15:24:06.554Z" title="更新于 2023-04-09 23:24:06">2023-04-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="categories/%E8%AE%A1%E7%AE%97%E6%9C%BA/">计算机</a></span><span class="post-meta-tags"><span class="post-meta-separator">|</span><i class="fas fa-tag"></i><a class="article-meta__tags" href="tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>10分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="多线程WEB服务器设计"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>要求基于运输层或其下层协议进行开发，而不能直接调用高级语言封装好的协议库或插件等。</p>
+<p>设计目的：<br />
+设计并实现一个 WEB 服务器，可并行服务处理多个请求。</p>
+<p>设计要求：<br />
+ 在后台运行服务器程序。<br />
+ 使用 Socket API 或 WinPcap 技术。<br />
+ 主线程监听客户机的连接建立请求，为每次请求/响应创建一个单独的TCP 连接，一个单独的线程	将处理这些连接。<br />
+ 用浏览器打开，显示请求页面内容即可；如有差错，则显示出错信息。</p>
+<h2 id="1网络接口编程原理"><a class="markdownIt-Anchor" href="#1网络接口编程原理"></a> 1.网络接口编程原理</h2>
+<p>网络协议栈的应用层有很多针对不同应用的协议，如 HTTP、FTP、SMTP 等等。每一种应用层协议都规定了应用程序之间进行数据交换所遵循的规则。基于某种应用层的协议，可以有不同的网络应用程序。比如我们日常使用的浏览新闻的浏览器，有的用户习惯Google 浏览器，有的喜欢火狐浏览器，还有的就使用 Windows 操作系统自带的 IE 浏览器，这些浏览器都是基于应用层协议HTTP/ HTTPS（超文本传输协议/安全的超文本传输协议）开发的网络应用程序。HTTP/HTTPS 规定了用户的客户机和提供 WEB 服务的服务器之间的网络通信规则，只要遵循该规则，不管是什么语言开发、什么界面，只要是能提供用户使用 WEB 服务，就完成了网络应用程序的功能。</p>
+<h3 id="11网络协议"><a class="markdownIt-Anchor" href="#11网络协议"></a> 1.1网络协议</h3>
+<p>网络协议栈的 5 层模型，从下向上为：物理层、数据链路层、网络层、传输层和应用层，每层都有对应层的网络协议负责同层的通信功能；上层协议使用下层协议实现的服务来完成本层协议功能，即层与层之间使用通过服务来连接。</p>
+<p><img src="C:%5CUsers%5C%E5%BB%96%E5%BF%97%E4%BD%B3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1680697021389.png" alt="1680697021389" /></p>
+<p>封装</p>
+<p>解封</p>
+<p>网络传输数据分组组成：</p>
+<p><img src="C:%5CUsers%5C%E5%BB%96%E5%BF%97%E4%BD%B3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1680699235369.png" alt="1680699235369" /></p>
+<p><img src="C:%5CUsers%5C%E5%BB%96%E5%BF%97%E4%BD%B3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1680699256544.png" alt="1680699256544" /></p>
+<h4 id="111网络程序体系结构"><a class="markdownIt-Anchor" href="#111网络程序体系结构"></a> 1.1.1网络程序体系结构</h4>
+<p>C/S（客户服务器结构）工作流程：</p>
+<p>P2P（对等结构）工作流程：</p>
+<h3 id="12套接字网络编程接口"><a class="markdownIt-Anchor" href="#12套接字网络编程接口"></a> 1.2套接字——网络编程接口</h3>
+<p>套接字编程接口：如 Windows Socket 和 Linux Socket，操作系统提供了对套接字进行操作的一组编程接口（API），应用程序使用这些 API 函数，可以构造套接字，安装绑定套接字，连接套接字，通过套接字交换数据，关闭套接字，在此基础上实现各种网络应用程序。</p>
+<h2 id="2pcap网络编程技术"><a class="markdownIt-Anchor" href="#2pcap网络编程技术"></a> 2.Pcap网络编程技术</h2>
+<h3 id="21winpcap概述"><a class="markdownIt-Anchor" href="#21winpcap概述"></a> 2.1Winpcap概述</h3>
+<h4 id="211winpcap资料下载"><a class="markdownIt-Anchor" href="#211winpcap资料下载"></a> 2.1.1Winpcap资料下载</h4>
+<h4 id="212winpcap环境配置"><a class="markdownIt-Anchor" href="#212winpcap环境配置"></a> 2.1.2Winpcap环境配置</h4>
+<p>vs环境配置</p>
+<h3 id="22winpcap编程"><a class="markdownIt-Anchor" href="#22winpcap编程"></a> 2.2Winpcap编程</h3>
+<h4 id="221winpcap开发流程"><a class="markdownIt-Anchor" href="#221winpcap开发流程"></a> 2.2.1Winpcap开发流程</h4>
+<p>Winpcap开发网络应用程序的流程大致一样：首先是获取主机安装的网络设备列表–选择并激活某个网络设备–封装数据包/过滤数据包–发送数据包/解析数据包。如下图所示：</p>
+<p><img src="C:%5CUsers%5C%E5%BB%96%E5%BF%97%E4%BD%B3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1680701409157.png" alt="1680701409157" /></p>
+<h4 id="222winpcap基本网络编程函数"><a class="markdownIt-Anchor" href="#222winpcap基本网络编程函数"></a> 2.2.2Winpcap基本网络编程函数</h4>
+<ul>
+<li>获取设备列表pcap_findalldevs()</li>
+<li>打开选择的适配器pcap_open_live()</li>
+<li>关闭适配器pcap_close()</li>
+<li>捕获数据包
+<ul>
+<li>直接捕获数据包方式</li>
+<li>回调方式捕获数据包</li>
+</ul>
+</li>
+<li>过滤数据包
+<ul>
+<li>pcap_compile( )</li>
+<li>pcap_setfilter( )</li>
+</ul>
+</li>
+<li>发送数据包
+<ul>
+<li>发送单个数据包 pcap_sendpacket（）</li>
+<li>发送队列连续发送数据包send_queue( )</li>
+</ul>
+</li>
+</ul>
+<h2 id="3socket网络编程技术"><a class="markdownIt-Anchor" href="#3socket网络编程技术"></a> 3.Socket网络编程技术</h2>
+<h3 id="31winsock概述"><a class="markdownIt-Anchor" href="#31winsock概述"></a> 3.1WinSock概述</h3>
+<p>在使用套接字函数前，用户需要引用 Winsock2.h 头文件，并链接 Ws2_32.lib 库文件。在代码前加入下面两行代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;winsock2.h&quot;</span> <span class="comment">//引用头文件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> comment (lib,<span class="string">&quot;ws2_32.lib&quot;</span>) <span class="comment">//链接库文件</span></span></span><br></pre></td></tr></table></figure>
+<h4 id="311winsock-的初始化和终止"><a class="markdownIt-Anchor" href="#311winsock-的初始化和终止"></a> 3.1.1WinSock 的初始化和终止</h4>
+<p>WinSock 应用程序通过初始化函数 WSAStartup（）来初始化 WinSock 库，在程序结束时，使用终止函数 WSAClieanup（）释放系统资源。</p>
+<h4 id="312创建和释放套接字"><a class="markdownIt-Anchor" href="#312创建和释放套接字"></a> 3.1.2创建和释放套接字</h4>
+<ul>
+<li>创建套接字socket()</li>
+<li>关闭套接字closesocket()</li>
+</ul>
+<h3 id="32winsock-编程"><a class="markdownIt-Anchor" href="#32winsock-编程"></a> 3.2WinSock 编程</h3>
+<h4 id="321winsock开发流程"><a class="markdownIt-Anchor" href="#321winsock开发流程"></a> 3.2.1WinSock开发流程</h4>
+<h4 id="322-winsock-基本函数"><a class="markdownIt-Anchor" href="#322-winsock-基本函数"></a> 3.2.2 WinSock 基本函数</h4>
+<ul>
+<li>绑定本地地址——bind( )</li>
+<li>请求连接——connect( )</li>
+<li>服务器监听连接——listen()</li>
+<li>接收连接请求——accept( )</li>
+<li>发送数据——send( )</li>
+<li>接收数据——recv( )</li>
+<li>按照指定目的地向数据报套接字发送数据——sendto( )</li>
+<li>从数据报套接字接收数据——recvfrom( )</li>
+<li>停止数据传输——shutdown( )</li>
+</ul>
+<h4 id="323-winsock-的-io-模型"><a class="markdownIt-Anchor" href="#323-winsock-的-io-模型"></a> 3.2.3 WinSock 的 I/O 模型</h4>
+<ul>
+<li>阻塞 I/O 模型</li>
+<li>就绪通告 I/O 模型</li>
+<li>重叠 I/O 模型</li>
+</ul>
+<h4 id="324-winsock-辅助函数"><a class="markdownIt-Anchor" href="#324-winsock-辅助函数"></a> 3.2.4 WinSock 辅助函数</h4>
+<ul>
+<li>字节顺序转换函数</li>
+<li>IP 地址转换函数</li>
+<li>套接口信息查询函数</li>
+<li>WinSock 错误处理函数</li>
+</ul>
+<h2 id="4源码"><a class="markdownIt-Anchor" href="#4源码"></a> 4.源码</h2>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//#include &quot;pch.h&quot;</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;winsock2.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;regex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> comment(lib,<span class="string">&quot;Ws2_32.lib&quot;</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">serverclient</span><span class="params">(SOCKET talksocket)</span></span>;</span><br><span class="line"><span class="function">std::string <span class="title">fileposition</span><span class="params">(<span class="string">&quot;C:\\Users\\廖志佳\\Desktop\\Project1&quot;</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//初始化winsock</span></span><br><span class="line">	WSADATA wasdata;</span><br><span class="line">	<span class="type">int</span> re = <span class="built_in">WSAStartup</span>(<span class="number">0x0202</span>, &amp;wasdata);<span class="comment">//返回值，如果成功，则WSAStartup函数将返回零；否则，返回错误代码</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (re) &#123;</span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;WSAstartup error\n&quot;</span>;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;WSAstartup success\n&quot;</span>;</span><br><span class="line">	<span class="keyword">if</span> (wasdata.wVersion != <span class="number">0x0202</span>) &#123;</span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;Version error\n&quot;</span>;</span><br><span class="line">		<span class="built_in">WSACleanup</span>();</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;Version pass\n&quot;</span>;</span><br><span class="line">	<span class="comment">//创建一个监听socket</span></span><br><span class="line">	SOCKET tcpsocket;<span class="comment">//服务器监听socket</span></span><br><span class="line">	tcpsocket = <span class="built_in">socket</span>(AF_INET, SOCK_STREAM, IPPROTO_TCP);</span><br><span class="line">		<span class="comment">//AF_INET是IPv4的Internet地址族格式，</span></span><br><span class="line">		<span class="comment">//SOCK_STREAM类型可将传输控制协议（TCP）用于Internet地址系列，</span></span><br><span class="line">		<span class="comment">//IPPROTO_TCP表示传输控制协议（TCP）。</span></span><br><span class="line">	<span class="keyword">if</span> (tcpsocket == INVALID_SOCKET) &#123;<span class="comment">//如果创建失败返回INVALID_SOCKET值</span></span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;Get socket error\n&quot;</span>;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;get correct socket\n&quot;</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//bind 绑定socket</span></span><br><span class="line">	sockaddr_in addr;</span><br><span class="line">	addr.sin_family = AF_INET;</span><br><span class="line">	addr.sin_port = <span class="built_in">htons</span>(<span class="number">80</span>);</span><br><span class="line">	addr.sin_addr.S_un.S_addr = <span class="built_in">htonl</span>(INADDR_ANY);</span><br><span class="line">	<span class="built_in">bind</span>(tcpsocket, (LPSOCKADDR)&amp;addr, <span class="built_in">sizeof</span>(addr));</span><br><span class="line"></span><br><span class="line">	<span class="comment">//监听socket，等待客户机的连接请求</span></span><br><span class="line">	re = <span class="built_in">listen</span>(tcpsocket, <span class="number">100</span>);<span class="comment">//最多接收100个连接</span></span><br><span class="line">	<span class="keyword">if</span> (re == SOCKET_ERROR) &#123;<span class="comment">//如果不成功，返回SOCKET_ERROR的值，</span></span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;listen error\n&quot;</span>;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;listen correct\n&quot;</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//accept接收客户机请求 连接并生成会话socket</span></span><br><span class="line">	<span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">int</span> sockerror;</span><br><span class="line">		<span class="type">int</span> length = <span class="built_in">sizeof</span>(sockaddr);</span><br><span class="line">		sockaddr_in clientaddr;</span><br><span class="line">		SOCKET talksocket = <span class="built_in">accept</span>(tcpsocket, (sockaddr*)&amp;clientaddr, &amp;length);</span><br><span class="line">		<span class="keyword">if</span> (talksocket == INVALID_SOCKET) &#123;<span class="comment">//如果接收不成功，将返回INVALID_SOCKET的值</span></span><br><span class="line">			std::cout &lt;&lt; <span class="string">&quot;accept error\n&quot;</span>;</span><br><span class="line">			sockerror = <span class="built_in">WSAGetLastError</span>();</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			std::cout &lt;&lt; <span class="string">&quot;accept success\n&quot;</span>;</span><br><span class="line">			<span class="function">std::thread <span class="title">talkthread</span><span class="params">(serverclient, talksocket)</span></span>;<span class="comment">//开启一个新的线程来处理这一个客户的请求</span></span><br><span class="line">			std::cout &lt;&lt; <span class="string">&quot;request IP:&quot;</span> &lt;&lt; (<span class="type">int</span>)clientaddr.sin_addr.S_un.S_un_b.s_b1 &lt;&lt; <span class="string">&quot;.&quot;</span> &lt;&lt; (<span class="type">int</span>)clientaddr.sin_addr.S_un.S_un_b.s_b2 &lt;&lt; <span class="string">&quot;.&quot;</span> &lt;&lt; (<span class="type">int</span>)clientaddr.sin_addr.S_un.S_un_b.s_b3 &lt;&lt; <span class="string">&quot;.&quot;</span> &lt;&lt; (<span class="type">int</span>)clientaddr.sin_addr.S_un.S_un_b.s_b4;</span><br><span class="line">			std::cout &lt;&lt; <span class="string">&quot;\nrequest Port:&quot;</span> &lt;&lt; clientaddr.sin_port &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">			talkthread.<span class="built_in">detach</span>();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">serverclient</span><span class="params">(SOCKET talksocket)</span> </span>&#123;<span class="comment">//进行会话的函数。</span></span><br><span class="line">	<span class="type">int</span> sendre;</span><br><span class="line">	<span class="type">char</span>* buf = (<span class="type">char</span>*)<span class="built_in">malloc</span>(<span class="number">1024</span> * <span class="built_in">sizeof</span>(<span class="type">char</span>));</span><br><span class="line">	<span class="type">int</span> len = <span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> recharnum;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>* NOTFOUND = <span class="string">&quot;HTTP/1.1 404 Not Found\r\n&quot;</span>;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>* REQERROR = <span class="string">&quot;HTTP/1.1 400 Bad Request\r\n&quot;</span>;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>* FORMERROR = <span class="string">&quot;HTTP/1.1 400 Bad Request\r\n&quot;</span>;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>* LOADERROR = <span class="string">&quot;HTTP/1.1 400 Bad Request\r\n&quot;</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//接收数据</span></span><br><span class="line">	recharnum = <span class="built_in">recv</span>(talksocket, buf, len, <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">if</span> (recharnum == SOCKET_ERROR) &#123;</span><br><span class="line">		recharnum = <span class="built_in">WSAGetLastError</span>();</span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;thread falied!&quot;</span>;</span><br><span class="line">		std::cout &lt;&lt; std::endl;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">//对接受到的消息进行解析</span></span><br><span class="line">		std::smatch strmatch;<span class="comment">//正则表达式结果文本</span></span><br><span class="line">		<span class="function">std::regex <span class="title">regulation</span><span class="params">(<span class="string">&quot;([A-Za-z]+) +(.*) +(HTTP/[0-9][.][0-9])&quot;</span>)</span></span>;<span class="comment">//正则表达式规则，，匹配请求报文的请求行</span></span><br><span class="line">		<span class="function">std::string <span class="title">str</span><span class="params">(buf)</span></span>;<span class="comment">//需要用正则表达式的原始文本</span></span><br><span class="line"></span><br><span class="line">		<span class="type">int</span> matchnum = std::<span class="built_in">regex_search</span>(str, strmatch, regulation);</span><br><span class="line">		<span class="keyword">if</span> (matchnum == <span class="number">0</span>) &#123;</span><br><span class="line">			std::cout &lt;&lt; <span class="string">&quot;request message exception\n&quot;</span>;</span><br><span class="line">			sendre = <span class="built_in">send</span>(talksocket, REQERROR, <span class="built_in">strlen</span>(REQERROR), <span class="number">0</span>);</span><br><span class="line">			<span class="built_in">closesocket</span>(talksocket);</span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;<span class="comment">//分离 GET  url http_version</span></span><br><span class="line">			std::string msg_get = strmatch[<span class="number">1</span>];</span><br><span class="line">			std::string msg_url = strmatch[<span class="number">2</span>];</span><br><span class="line">			std::smatch filetype;</span><br><span class="line">			<span class="function">std::regex <span class="title">regulation2</span><span class="params">(<span class="string">&quot;\\..*&quot;</span>)</span></span>;</span><br><span class="line">			matchnum = <span class="built_in">regex_search</span>(msg_url, filetype, regulation2);</span><br><span class="line">			<span class="keyword">if</span> (matchnum == <span class="number">0</span>) &#123;</span><br><span class="line">				std::cout &lt;&lt; msg_get + msg_url + <span class="string">&quot;FORMAT ERROR\n&quot;</span>;</span><br><span class="line">				sendre = <span class="built_in">send</span>(talksocket, FORMERROR, <span class="built_in">strlen</span>(FORMERROR), <span class="number">0</span>);</span><br><span class="line">				<span class="built_in">closesocket</span>(talksocket);</span><br><span class="line">				<span class="keyword">return</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span></span><br><span class="line">			&#123;</span><br><span class="line">				std::ifstream <span class="built_in">f</span>(fileposition + msg_url, std::ios::binary);</span><br><span class="line">				<span class="keyword">if</span> (!f) &#123;<span class="comment">//没有找到文件</span></span><br><span class="line">					std::cout &lt;&lt; msg_url + <span class="string">&quot;NOT FOUND&quot;</span>;</span><br><span class="line">					<span class="comment">//sendre=send(talksocket, NOTFOUND, strlen(NOTFOUND),0);</span></span><br><span class="line">					<span class="function">std::ifstream <span class="title">f</span><span class="params">(fileposition + <span class="string">&quot;404.html&quot;</span>, std::ios::binary)</span></span>;</span><br><span class="line">					<span class="keyword">goto</span> sendfile;</span><br><span class="line">					<span class="built_in">closesocket</span>(talksocket);</span><br><span class="line">					<span class="keyword">return</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">else</span> &#123;<span class="comment">//如果找到了对应的文件</span></span><br><span class="line">				sendfile:</span><br><span class="line">					std::filebuf* tmp = f.<span class="built_in">rdbuf</span>();</span><br><span class="line">					<span class="type">int</span> size = tmp-&gt;<span class="built_in">pubseekoff</span>(<span class="number">0</span>, f.end, f.in);</span><br><span class="line">					tmp-&gt;<span class="built_in">pubseekpos</span>(<span class="number">0</span>, f.in);</span><br><span class="line">					<span class="keyword">if</span> (size &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">						std::cout &lt;&lt; <span class="string">&quot;load file into memory failed!\n&quot;</span>;</span><br><span class="line">						sendre = <span class="built_in">send</span>(talksocket, LOADERROR, <span class="built_in">strlen</span>(LOADERROR), <span class="number">0</span>);</span><br><span class="line">						<span class="built_in">closesocket</span>(talksocket);</span><br><span class="line">						<span class="keyword">return</span>;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">else</span> &#123;</span><br><span class="line">						std::string Content_Type = <span class="string">&quot;image/jpg&quot;</span>;</span><br><span class="line">						<span class="type">char</span>* buffer = <span class="keyword">new</span> <span class="type">char</span>[size];</span><br><span class="line">						<span class="type">char</span>* tail = buffer + size;</span><br><span class="line">						tmp-&gt;<span class="built_in">sgetn</span>(buffer, size);</span><br><span class="line">						f.<span class="built_in">close</span>();</span><br><span class="line">						std::cout &lt;&lt; <span class="string">&quot;success return file &quot;</span> + msg_url;</span><br><span class="line">						std::cout &lt;&lt; std::endl;</span><br><span class="line">						std::stringstream remsg;</span><br><span class="line">						remsg &lt;&lt; <span class="string">&quot;HTTP/1.1 200 OK\r\n&quot;</span> &lt;&lt; <span class="string">&quot;Connection:close\r\n&quot;</span> &lt;&lt; <span class="string">&quot;Server:Macyrate\r\n&quot;</span> &lt;&lt; <span class="string">&quot;Content Length:&quot;</span> &lt;&lt; size</span><br><span class="line">							&lt;&lt; <span class="string">&quot;\r\n&quot;</span> &lt;&lt; <span class="string">&quot;Content Type:&quot;</span> + Content_Type &lt;&lt; <span class="string">&quot;\r\n\r\n&quot;</span>;</span><br><span class="line">						std::string remsgstr = remsg.<span class="built_in">str</span>();</span><br><span class="line">						<span class="type">const</span> <span class="type">char</span>* remsgchar = remsgstr.<span class="built_in">c_str</span>();</span><br><span class="line">						<span class="type">int</span> tmpsize = <span class="built_in">strlen</span>(remsgchar);</span><br><span class="line">						sendre = <span class="built_in">send</span>(talksocket, remsgchar, tmpsize, <span class="number">0</span>);</span><br><span class="line">						<span class="keyword">while</span> (buffer &lt; tail) &#123;</span><br><span class="line">							sendre = <span class="built_in">send</span>(talksocket, buffer, size, <span class="number">0</span>);</span><br><span class="line">							buffer = buffer + sendre;</span><br><span class="line">							size = size - sendre;</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="built_in">closesocket</span>(talksocket);</span><br><span class="line">						<span class="keyword">return</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整个Web服务器设计可分为以下几个部分：</p>
+<ol>
+<li>初始化Windows Socket，为TCP连接的建立做准备</li>
+</ol>
+<p>①加载Windows Socket；</p>
+<p>②创建套接字；</p>
+<p>③根据服务器端的相关IP地址和端口号信息，进行套接字绑定。</p>
+<ol start="2">
+<li>启动监听，接受客户端请求建立TCP连接，接收HTTP请求报文</li>
+</ol>
+<p>①Web服务器启动监听；</p>
+<p>②接收来自客户端的连接请求，建立TCP连接；</p>
+<p>③接收来自客户端的TCP传输数据，即HTTP请求报文。</p>
+<ol start="3">
+<li>处理HTTP请求报文并做出响应</li>
+</ol>
+<p>①处理HTTP请求报文的请求行；</p>
+<p>②判断处理“请求方法”，根据判断处理的结果，构造相应的响应报文，反馈相关给客户端，并且在服务器端打印反馈的结果；</p>
+<p>③判断处理“URL”，根据判断处理的结果，构造相应的响应报文，反馈相关给客户端，并且在服务器端打印反馈的结果；</p>
+<ol start="4">
+<li>关闭连接及Windows Socket</li>
+</ol>
+<p>①关闭所建立连接的套接字；</p>
+<p>②关闭Windows Socket。</p>
+<p>在server.cpp中，使用winsock库和windows线程池（<thread>库）编程。程序分为两个函数：main函数用于创建socket，建立与客户端的多线程会话连接；serverclient函数用于在会话中实际处理客户端的请求，即根据接收到报文的内容进行正则表达式匹配解析，提取有效信息并提供相应服务。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://lzj3214677.github.io">戈壁残阳</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://lzj3214677.github.io/2248986101.html">http://lzj3214677.github.io/2248986101.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://lzj3214677.github.io" target="_blank">竹杖芒鞋轻胜马</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a></div><div class="post_share"><div class="social-share" data-image="/local_file/shanguiyao.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i> 打赏</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/local_file/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="/local_file/wechat.jpg" alt="微信"/></a><div class="post-qr-code-desc">微信</div></li><li class="reward-item"><a href="/local_file/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="/local_file/alipay.jpg" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="500443968.html" title="鸢尾花分类"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">鸢尾花分类</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/local_file/shanguiyao.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div></div><a class="button--animated" id="card-info-btn" href="/"><i class="fas fa-home"></i><span>回到首页</span></a></div><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E7%BD%91%E7%BB%9C%E6%8E%A5%E5%8F%A3%E7%BC%96%E7%A8%8B%E5%8E%9F%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text"> 1.网络接口编程原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#11%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.1.</span> <span class="toc-text"> 1.1网络协议</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#111%E7%BD%91%E7%BB%9C%E7%A8%8B%E5%BA%8F%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.1.</span> <span class="toc-text"> 1.1.1网络程序体系结构</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12%E5%A5%97%E6%8E%A5%E5%AD%97%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.2.</span> <span class="toc-text"> 1.2套接字——网络编程接口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2pcap%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E6%8A%80%E6%9C%AF"><span class="toc-number">2.</span> <span class="toc-text"> 2.Pcap网络编程技术</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#21winpcap%E6%A6%82%E8%BF%B0"><span class="toc-number">2.1.</span> <span class="toc-text"> 2.1Winpcap概述</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#211winpcap%E8%B5%84%E6%96%99%E4%B8%8B%E8%BD%BD"><span class="toc-number">2.1.1.</span> <span class="toc-text"> 2.1.1Winpcap资料下载</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#212winpcap%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="toc-number">2.1.2.</span> <span class="toc-text"> 2.1.2Winpcap环境配置</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#22winpcap%E7%BC%96%E7%A8%8B"><span class="toc-number">2.2.</span> <span class="toc-text"> 2.2Winpcap编程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#221winpcap%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="toc-number">2.2.1.</span> <span class="toc-text"> 2.2.1Winpcap开发流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#222winpcap%E5%9F%BA%E6%9C%AC%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E5%87%BD%E6%95%B0"><span class="toc-number">2.2.2.</span> <span class="toc-text"> 2.2.2Winpcap基本网络编程函数</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E6%8A%80%E6%9C%AF"><span class="toc-number">3.</span> <span class="toc-text"> 3.Socket网络编程技术</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#31winsock%E6%A6%82%E8%BF%B0"><span class="toc-number">3.1.</span> <span class="toc-text"> 3.1WinSock概述</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#311winsock-%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96%E5%92%8C%E7%BB%88%E6%AD%A2"><span class="toc-number">3.1.1.</span> <span class="toc-text"> 3.1.1WinSock 的初始化和终止</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#312%E5%88%9B%E5%BB%BA%E5%92%8C%E9%87%8A%E6%94%BE%E5%A5%97%E6%8E%A5%E5%AD%97"><span class="toc-number">3.1.2.</span> <span class="toc-text"> 3.1.2创建和释放套接字</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#32winsock-%E7%BC%96%E7%A8%8B"><span class="toc-number">3.2.</span> <span class="toc-text"> 3.2WinSock 编程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#321winsock%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="toc-number">3.2.1.</span> <span class="toc-text"> 3.2.1WinSock开发流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#322-winsock-%E5%9F%BA%E6%9C%AC%E5%87%BD%E6%95%B0"><span class="toc-number">3.2.2.</span> <span class="toc-text"> 3.2.2 WinSock 基本函数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#323-winsock-%E7%9A%84-io-%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.2.3.</span> <span class="toc-text"> 3.2.3 WinSock 的 I&#x2F;O 模型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#324-winsock-%E8%BE%85%E5%8A%A9%E5%87%BD%E6%95%B0"><span class="toc-number">3.2.4.</span> <span class="toc-text"> 3.2.4 WinSock 辅助函数</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E6%BA%90%E7%A0%81"><span class="toc-number">4.</span> <span class="toc-text"> 4.源码</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="../2248986101.html" title="多线程WEB服务器设计">多线程WEB服务器设计</a><time datetime="2023-04-07T14:22:00.000Z" title="发表于 2023-04-07 22:22:00">2023-04-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="../500443968.html" title="鸢尾花分类">鸢尾花分类</a><time datetime="2023-04-03T14:45:30.000Z" title="发表于 2023-04-03 22:45:30">2023-04-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="../1299758958.html" title="预测房价">预测房价</a><time datetime="2023-04-03T14:20:21.000Z" title="发表于 2023-04-03 22:20:21">2023-04-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="../217865476.html" title="股票数据分析">股票数据分析</a><time datetime="2023-04-03T14:02:13.000Z" title="发表于 2023-04-03 22:02:13">2023-04-03</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/local_file/%E8%AE%A1%E7%AE%97%E6%9C%BA.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2023 By 戈壁残阳</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">简</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="js/utils.js"></script><script src="js/main.js"></script><script src="js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"]],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, ''],
+        insertScript: [200, () => {
+          document.querySelectorAll('mjx-container').forEach(node => {
+            if (node.hasAttribute('display')) {
+              btf.wrap(node, 'div', { class: 'mathjax-overflow' })
+            } else {
+              btf.wrap(node, 'span', { class: 'mathjax-overflow' })
+            }
+          });
+        }, '', false]
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script type='text/javascript' src='https://ajax.loli.net/ajax/libs/jquery/3.2.1/jquery.min.js'></script><script id="dsq-count-scr" src="//https-www-dhndzwxj-top.disqus.com/count.js" async></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div><script src="../js/search/local-search.js"></script></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_clock_anzhiyu_injector_config(){
+    var parent_div_git = document.getElementsByClassName('sticky_layout')[0];
+    var item_html = '<div class="card-widget card-clock"><div class="card-glass"><div class="card-background"><div class="card-content"><div id="hexo_electric_clock"><img class="entered loading" id="card-clock-loading" src="https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/loading.gif" style="height: 120px; width: 100%;" data-ll-status="loading"/></div></div></div></div></div>';
+    console.log('已挂载butterfly_clock_anzhiyu')
+    if(parent_div_git) {
+      parent_div_git.insertAdjacentHTML("afterbegin",item_html)
+    }
+  }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var qweather_key = 'b16a1fa0e63c46a4b8f28abfb06ae3fe';
+  var gaud_map_key = 'e2b04289e870b005374ee030148d64fd&s=rsv3';
+  var baidu_ak_key = 'undefined';
+  var flag = 0;
+  var clock_rectangle = '112.982279,28.19409';
+  var clock_default_rectangle_enable = 'false';
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_clock_anzhiyu_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_clock_anzhiyu_injector_config();
+  }
+  </script><script src="https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0"></script><script data-pjax src="https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.js"></script><!-- hexo injector body_end end --></body></html>
